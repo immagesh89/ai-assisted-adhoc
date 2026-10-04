@@ -1,4 +1,5 @@
 using Api.Features.Products;
+using Api.Features.SavedItems;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,7 @@ var app = builder.Build();
 app.UseCors();
 
 app.MapProductEndpoints();
+app.MapSavedItemEndpoints();
 
 app.Run();
 

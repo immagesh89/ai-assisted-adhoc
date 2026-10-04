@@ -1,0 +1,306 @@
+diff --git a/src/backend/Api/Program.cs b/src/backend/Api/Program.cs
+index fe9395f..a0db0c4 100644
+--- a/src/backend/Api/Program.cs
++++ b/src/backend/Api/Program.cs
+@@ -1,4 +1,5 @@
+ using Api.Features.Products;
++using Api.Features.SavedItems;
+ 
+ var builder = WebApplication.CreateBuilder(args);
+ 
+@@ -17,6 +18,7 @@ var app = builder.Build();
+ app.UseCors();
+ 
+ app.MapProductEndpoints();
++app.MapSavedItemEndpoints();
+ 
+ app.Run();
+ 
+diff --git a/src/frontend/package-lock.json b/src/frontend/package-lock.json
+index 1f55127..18e8c27 100644
+--- a/src/frontend/package-lock.json
++++ b/src/frontend/package-lock.json
+@@ -9,7 +9,8 @@
+       "version": "0.0.0",
+       "dependencies": {
+         "react": "^18.3.1",
+-        "react-dom": "^18.3.1"
++        "react-dom": "^18.3.1",
++        "react-router-dom": "^6.30.6"
+       },
+       "devDependencies": {
+         "@testing-library/jest-dom": "^6.4.8",
+@@ -1129,6 +1130,15 @@
+         "node": ">= 8"
+       }
+     },
++    "node_modules/@remix-run/router": {
++      "version": "1.23.4",
++      "resolved": "https://registry.npmjs.org/@remix-run/router/-/router-1.23.4.tgz",
++      "integrity": "sha512-q7j5geK7xs3UJSdm9/iytUNclBnLmYx1EnSeCFXHPeutdqgIMeFeHtUZgS3EhlKxdBEAu8OwtJCwmLrEzpSs7Q==",
++      "license": "MIT",
++      "engines": {
++        "node": ">=14.0.0"
++      }
++    },
+     "node_modules/@rolldown/pluginutils": {
+       "version": "1.0.0-beta.27",
+       "resolved": "https://registry.npmjs.org/@rolldown/pluginutils/-/pluginutils-1.0.0-beta.27.tgz",
+@@ -4116,6 +4126,38 @@
+         "node": ">=0.10.0"
+       }
+     },
++    "node_modules/react-router": {
++      "version": "6.30.6",
++      "resolved": "https://registry.npmjs.org/react-router/-/react-router-6.30.6.tgz",
++      "integrity": "sha512-5HfK7k5im7LTOB0EqCQmfvy4C13G92Ssj1VTmouTK3AJvyjKTnFuCV0vcMAD/JS+JC4DvDIBRrlAeJIFjh5VWg==",
++      "license": "MIT",
++      "dependencies": {
++        "@remix-run/router": "1.23.4"
++      },
++      "engines": {
++        "node": ">=14.0.0"
++      },
++      "peerDependencies": {
++        "react": ">=16.8"
++      }
++    },
++    "node_modules/react-router-dom": {
++      "version": "6.30.6",
++      "resolved": "https://registry.npmjs.org/react-router-dom/-/react-router-dom-6.30.6.tgz",
++      "integrity": "sha512-0RHKZz7wwffvkU+2MFVT2NnjK44ssLEV+m0CAJaS2Ksmorrwj7WxH00jO0SOCW26/tINUnJHToXblDs33I38YQ==",
++      "license": "MIT",
++      "dependencies": {
++        "@remix-run/router": "1.23.4",
++        "react-router": "6.30.6"
++      },
++      "engines": {
++        "node": ">=14.0.0"
++      },
++      "peerDependencies": {
++        "react": ">=16.8",
++        "react-dom": ">=16.8"
++      }
++    },
+     "node_modules/redent": {
+       "version": "3.0.0",
+       "resolved": "https://registry.npmjs.org/redent/-/redent-3.0.0.tgz",
+diff --git a/src/frontend/package.json b/src/frontend/package.json
+index 0451a89..6a44e8d 100644
+--- a/src/frontend/package.json
++++ b/src/frontend/package.json
+@@ -12,7 +12,8 @@
+   },
+   "dependencies": {
+     "react": "^18.3.1",
+-    "react-dom": "^18.3.1"
++    "react-dom": "^18.3.1",
++    "react-router-dom": "^6.30.6"
+   },
+   "devDependencies": {
+     "@testing-library/jest-dom": "^6.4.8",
+diff --git a/src/frontend/src/App.tsx b/src/frontend/src/App.tsx
+index 2584294..edbc0b8 100644
+--- a/src/frontend/src/App.tsx
++++ b/src/frontend/src/App.tsx
+@@ -1,14 +1,43 @@
++import { useState } from "react";
++import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+ import { ProductList } from "./features/products/ProductList";
++import { SavedProductsList } from "./features/saved/SavedProductsList";
++import { SaveButton } from "./features/saved/SaveButton";
+ import "./App.css";
+ 
+-function App() {
++// For demo purposes, using a fixed user ID as specified by the stubbed auth
++const DEMO_USER_ID = "user-123";
++
++function Home() {
++  const [capMessage, setCapMessage] = useState("");
+   return (
+-    <main className="app">
+-      <header className="app-header">
+-        <h1>Product Catalog</h1>
+-      </header>
++    <div>
++      {capMessage && <p className="status-message" role="alert">{capMessage}</p>}
+       <ProductList />
+-    </main>
++    </div>
++  );
++}
++
++function Saved() {
++  return <SavedProductsList userId={DEMO_USER_ID} />;
++}
++
++function App() {
++  return (
++    <BrowserRouter>
++      <main className="app">
++        <header className="app-header">
++          <h1>Product Catalog</h1>
++          <nav>
++            <Link to="/">Home</Link> | <Link to="/saved">Saved</Link>
++          </nav>
++        </header>
++        <Routes>
++          <Route path="/" element={<Home />} />
++          <Route path="/saved" element={<Saved />} />
++        </Routes>
++      </main>
++    </BrowserRouter>
+   );
+ }
+ 
+diff --git a/src/frontend/src/features/products/ProductList.tsx b/src/frontend/src/features/products/ProductList.tsx
+index 570fe6d..6be21d2 100644
+--- a/src/frontend/src/features/products/ProductList.tsx
++++ b/src/frontend/src/features/products/ProductList.tsx
+@@ -1,21 +1,26 @@
+ import { useEffect, useState } from "react";
+-import { fetchProducts } from "./api";
++import { fetchProducts, fetchSavedItems } from "./api";
+ import { ProductCard } from "./ProductCard";
++import { SaveButton } from "../saved/SaveButton";
+ import type { Product } from "./types";
++import type { SavedItem } from "./api";
+ 
+ export function ProductList() {
+   const [products, setProducts] = useState<Product[]>([]);
+-  const [status, setStatus] = useState<"loading" | "ready" | "error">(
+-    "loading",
+-  );
++  const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
++  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
++  const [capMessage, setCapMessage] = useState("");
++
++  const userId = "user-123"; // stubbed auth
+ 
+   useEffect(() => {
+     let cancelled = false;
+ 
+-    fetchProducts()
+-      .then((data) => {
++    Promise.all([fetchProducts(), fetchSavedItems(userId)])
++      .then(([productsData, savedData]) => {
+         if (!cancelled) {
+-          setProducts(data);
++          setProducts(productsData);
++          setSavedItems(savedData);
+           setStatus("ready");
+         }
+       })
+@@ -30,8 +35,15 @@ export function ProductList() {
+     };
+   }, []);
+ 
++  const isSaved = (productId: string) => savedItems.some((s) => s.productId === productId);
++
++  const handleCapHit = () => {
++    setCapMessage("Cannot save more than 20 items.");
++    setTimeout(() => setCapMessage(""), 3000);
++  };
++
+   if (status === "loading") {
+-    return <p className="status-message">Loading products…</p>;
++    return <p className="status-message">Loading products.</p>;
+   }
+ 
+   if (status === "error") {
+@@ -47,10 +59,28 @@ export function ProductList() {
+   }
+ 
+   return (
+-    <div className="product-grid">
+-      {products.map((product) => (
+-        <ProductCard key={product.id} product={product} />
+-      ))}
++    <div>
++      {capMessage && <p className="status-message" role="alert">{capMessage}</p>}
++      <div className="product-grid">
++        {products.map((product) => (
++          <div key={product.id} data-testid="product-item">
++            <ProductCard product={product} />
++            <SaveButton
++              userId={userId}
++              productId={product.id}
++              isSaved={isSaved(product.id)}
++              onCapHit={handleCapHit}
++              onToggle={(saved) => {
++                if (saved) {
++                  setSavedItems([...savedItems, { id: "temp", userId, productId: product.id, savedAt: new Date().toISOString() }]);
++                } else {
++                  setSavedItems(savedItems.filter((s) => s.productId !== product.id));
++                }
++              }}
++            />
++          </div>
++        ))}
++      </div>
+     </div>
+   );
+ }
+diff --git a/src/frontend/src/features/products/api.ts b/src/frontend/src/features/products/api.ts
+index 8a1ff9c..4ea8b12 100644
+--- a/src/frontend/src/features/products/api.ts
++++ b/src/frontend/src/features/products/api.ts
+@@ -1,9 +1,12 @@
+ import type { Product } from "./types";
+ 
+-// Convention for this repo: one small async function per endpoint, thin
+-// wrapper over fetch, throws on non-OK so callers can catch/handle. Mirror
+-// this shape for the new save/unsave/saved-items calls rather than
+-// introducing a different pattern (axios, a generic client class, etc.).
++export interface SavedItem {
++  id: string;
++  userId: string;
++  productId: string;
++  savedAt: string;
++}
++
+ export async function fetchProducts(): Promise<Product[]> {
+   const response = await fetch("/api/products");
+   if (!response.ok) {
+@@ -11,3 +14,41 @@ export async function fetchProducts(): Promise<Product[]> {
+   }
+   return response.json();
+ }
++
++export async function fetchSavedItems(userId: string): Promise<SavedItem[]> {
++  const response = await fetch("/api/saved-items", {
++    headers: {
++      "X-User-Id": userId,
++    },
++  });
++  if (!response.ok) {
++    throw new Error(`Failed to fetch saved items: ${response.status}`);
++  }
++  return response.json();
++}
++
++export async function saveProduct(userId: string, productId: string): Promise<Response> {
++  const response = await fetch(`/api/products/${productId}/save`, {
++    method: "POST",
++    headers: {
++      "X-User-Id": userId,
++    },
++  });
++  if (!response.ok && response.status !== 200 && response.status !== 201 && response.status !== 409) {
++    throw new Error(`Failed to save product: ${response.status}`);
++  }
++  return response;
++}
++
++export async function unsaveProduct(userId: string, productId: string): Promise<Response> {
++  const response = await fetch(`/api/products/${productId}/save`, {
++    method: "DELETE",
++    headers: {
++      "X-User-Id": userId,
++    },
++  });
++  if (!response.ok && response.status !== 204) {
++    throw new Error(`Failed to unsave product: ${response.status}`);
++  }
++  return response;
++}
